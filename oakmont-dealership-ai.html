@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oakmont Dealership AI — Flip Garage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --asphalt:#0b0c0f;
+  --panel:#14161b;
+  --panel-2:#191c22;
+  --line:#242833;
+  --yellow:#ffbe0b;
+  --yellow-dim:rgba(255,190,11,.14);
+  --red:#ff3b2f;
+  --green:#2fdc86;
+  --text:#eef0f4;
+  --muted:#9aa1ad;
+  --dim:#6b7280;
+  --disp:'Oswald',sans-serif;
+  --dash:'Chakra Petch',monospace;
+  --body:'Barlow',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--asphalt);
+  color:var(--text);
+  font-family:var(--body);
+  font-size:15px;
+  line-height:1.55;
+  background-image:
+    repeating-linear-gradient(135deg, rgba(255,255,255,.012) 0 2px, transparent 2px 6px);
+}
+::selection{background:var(--yellow);color:#000}
+
+/* ---------- layout ---------- */
+.app{display:flex;min-height:100vh}
+.sidebar{
+  width:290px;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;
+  background:linear-gradient(180deg,#101216,#0c0d11);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;padding:26px 18px 18px;z-index:50;overflow-y:auto;
+}
+.main{margin-left:290px;flex:1;min-width:0}
+.page{display:none;padding:38px 46px 70px;max-width:1500px}
+.page.active{display:block}
+
+/* ---------- sidebar ---------- */
+.logo h1{
+  font-family:var(--disp);font-size:26px;font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;line-height:1.05;
+}
+.logo h1 .amp{color:var(--yellow)}
+.logo .sub{
+  font-family:var(--dash);font-size:10px;letter-spacing:.34em;color:var(--muted);
+  text-transform:uppercase;margin-top:7px;
+}
+.logo .plate{
+  display:inline-block;margin-top:12px;padding:3px 10px 2px;
+  border:1px solid var(--line);border-radius:4px;
+  font-family:var(--dash);font-size:10px;letter-spacing:.22em;color:var(--yellow);
+  background:linear-gradient(180deg,rgba(255,190,11,.08),transparent);
+  text-transform:uppercase;
+}
+.nav-label{
+  font-family:var(--dash);font-size:10px;letter-spacing:.32em;color:var(--dim);
+  text-transform:uppercase;margin:30px 10px 10px;
+}
+.nav-btn{
+  display:flex;align-items:center;gap:13px;width:100%;
+  background:none;border:1px solid transparent;border-radius:9px;
+  padding:12px 14px;margin-bottom:4px;cursor:pointer;text-align:left;
+  color:var(--muted);font-family:var(--body);font-size:14.5px;font-weight:500;
+  transition:all .15s ease;
+}
+.nav-btn svg{width:19px;height:19px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-btn.active{
+  color:var(--yellow);background:var(--yellow-dim);
+  border-color:rgba(255,190,11,.35);
+  box-shadow:inset 3px 0 0 var(--yellow);
+  font-weight:600;
+}
+.side-card{
+  margin-top:auto;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:15px 15px 13px;margin-bottom:12px;
+}
+.side-card .t{font-family:var(--dash);font-size:11px;letter-spacing:.22em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.side-card .d{font-size:12px;color:var(--dim);margin-top:6px}
+.toggle{
+  position:relative;width:42px;height:22px;background:#2a2e38;border-radius:20px;cursor:pointer;
+  transition:background .15s;flex-shrink:0;border:none;
+}
+.toggle::after{
+  content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;
+  background:#888;transition:all .15s;
+}
+.toggle.on{background:var(--yellow)}
+.toggle.on::after{left:23px;background:#111}
+.side-foot button{
+  width:100%;background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  font-family:var(--dash);font-size:12px;letter-spacing:.1em;border-radius:8px;
+  padding:11px;margin-top:8px;cursor:pointer;transition:all .15s;text-transform:uppercase;
+}
+.side-foot button:hover{color:var(--text);border-color:#3a3f4c}
+
+/* ---------- page headers ---------- */
+.eyebrow{
+  font-family:var(--dash);font-size:11px;letter-spacing:.4em;color:var(--yellow);
+  text-transform:uppercase;font-weight:600;display:flex;align-items:center;gap:12px;
+}
+.eyebrow::after{content:'';height:1px;width:54px;background:linear-gradient(90deg,var(--yellow),transparent)}
+.page-title{
+  font-family:var(--disp);font-size:52px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.015em;line-height:1;margin-top:8px;
+}
+.page-sub{color:var(--muted);margin-top:8px;font-size:15px}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:34px}
+
+/* hazard stripe */
+.hazard{
+  height:7px;border-radius:4px 4px 0 0;
+  background:repeating-linear-gradient(-45deg,var(--yellow) 0 14px,#111 14px 28px);
+}
+.redline-bar{
+  height:4px;border-radius:4px 4px 0 0;
+  background:linear-gradient(90deg,var(--green),var(--yellow) 55%,var(--red));
+}
+
+/* ---------- cards / panels ---------- */
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+}
+.panel + .panel{margin-top:22px}
+.panel-head{
+  display:flex;align-items:center;gap:14px;padding:18px 24px;border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.012);
+}
+.step-chip{
+  font-family:var(--dash);font-size:12px;font-weight:700;color:#000;background:var(--yellow);
+  border-radius:5px;padding:3px 9px;letter-spacing:.05em;
+}
+.panel-head h3{font-family:var(--dash);font-size:15px;letter-spacing:.18em;text-transform:uppercase;font-weight:600}
+.panel-head .hint{margin-left:auto;font-size:12px;color:var(--dim)}
+.panel-body{padding:24px}
+
+/* ---------- hero ---------- */
+.hero{margin-bottom:26px}
+.hero-inner{padding:36px 40px 38px;position:relative;overflow:hidden}
+.hero-inner::before{
+  content:'';position:absolute;right:-70px;top:-70px;width:340px;height:340px;
+  background:radial-gradient(circle,rgba(255,190,11,.10),transparent 65%);pointer-events:none;
+}
+.hero-eyebrow{font-family:var(--dash);font-size:11px;letter-spacing:.4em;color:var(--yellow);text-transform:uppercase;font-weight:600}
+.hero h2{
+  font-family:var(--disp);font-size:62px;font-weight:700;text-transform:uppercase;
+  line-height:.98;margin-top:14px;letter-spacing:.01em;
+}
+.hero h2 .hl{color:var(--yellow)}
+.hero p{color:var(--muted);max-width:560px;margin-top:16px;font-size:15.5px}
+.hero-actions{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  font-family:var(--dash);font-weight:700;font-size:13.5px;letter-spacing:.09em;text-transform:uppercase;
+  border-radius:9px;padding:13px 24px;cursor:pointer;border:1px solid transparent;transition:all .15s;
+}
+.btn-primary{background:var(--yellow);color:#000}
+.btn-primary:hover{background:#ffd23f;transform:translateY(-1px);box-shadow:0 6px 22px rgba(255,190,11,.25)}
+.btn-ghost{background:transparent;color:var(--text);border-color:#333845}
+.btn-ghost:hover{border-color:#4a5160;background:rgba(255,255,255,.03)}
+.btn-big{width:100%;padding:17px;font-size:15px;border-radius:10px}
+.btn:disabled{opacity:.55;cursor:wait;transform:none}
+
+/* ---------- stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:16px;margin-bottom:26px}
+.stat{
+  background:var(--panel);border:1px solid var(--line);border-radius:11px;
+  padding:20px 22px;border-left:3px solid var(--yellow);
+}
+.stat .v{font-family:var(--disp);font-size:38px;font-weight:700;line-height:1}
+.stat .v.money{color:var(--green)}
+.stat .l{font-family:var(--dash);font-size:10.5px;letter-spacing:.24em;color:var(--muted);text-transform:uppercase;margin-top:9px}
+
+/* ---------- tool grid ---------- */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:16px}
+.tool-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:22px;
+  cursor:pointer;transition:all .15s;position:relative;
+}
+.tool-card:hover{border-color:rgba(255,190,11,.5);transform:translateY(-2px)}
+.tool-card .top{display:flex;justify-content:space-between;align-items:flex-start}
+.tool-card .ic{color:var(--yellow)}
+.tool-card .ic svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tool-card .arrow{color:var(--dim);transition:all .15s;font-size:18px}
+.tool-card:hover .arrow{color:var(--yellow);transform:translateX(3px)}
+.tool-card h4{font-family:var(--dash);font-size:15px;letter-spacing:.05em;margin-top:16px;text-transform:uppercase}
+.tool-card p{font-size:13px;color:var(--muted);margin-top:7px;line-height:1.5}
+
+/* ---------- forms ---------- */
+.field label{
+  display:block;font-family:var(--dash);font-size:11px;letter-spacing:.22em;color:var(--yellow);
+  text-transform:uppercase;font-weight:600;margin-bottom:9px;
+}
+.field label .opt{color:var(--dim);letter-spacing:.1em;text-transform:none;font-family:var(--body);font-size:12px}
+input[type=text],input[type=number],input[type=password],textarea,select{
+  width:100%;background:#0e1014;border:1px solid var(--line);border-radius:9px;
+  color:var(--text);font-family:var(--body);font-size:14.5px;padding:13px 15px;outline:none;
+  transition:border .15s;
+}
+textarea{resize:vertical;min-height:120px;line-height:1.55}
+input:focus,textarea:focus,select:focus{border-color:var(--yellow)}
+input::placeholder,textarea::placeholder{color:#4d525d}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.mt{margin-top:20px}
+.note{font-size:12.5px;color:var(--dim);margin-top:8px}
+.note a{color:var(--yellow);text-decoration:none}
+.note a:hover{text-decoration:underline}
+
+/* range sliders */
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:4px;
+  background:linear-gradient(90deg,var(--yellow) var(--fill,50%),#2a2e38 var(--fill,50%));
+  outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:19px;height:19px;border-radius:50%;
+  background:var(--yellow);border:3px solid #111;box-shadow:0 0 0 1px var(--yellow);
+}
+input[type=range]::-moz-range-thumb{
+  width:15px;height:15px;border-radius:50%;background:var(--yellow);border:3px solid #111;box-shadow:0 0 0 1px var(--yellow);
+}
+.range-row{display:flex;align-items:center;gap:16px}
+.range-val{
+  font-family:var(--dash);font-weight:700;font-size:15px;color:var(--yellow);
+  min-width:96px;text-align:right;white-space:nowrap;
+}
+
+/* pill toggles */
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{
+  font-family:var(--dash);font-size:12.5px;letter-spacing:.05em;padding:9px 15px;border-radius:8px;
+  border:1px solid var(--line);background:#0e1014;color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.pill:hover{color:var(--text);border-color:#3a3f4c}
+.pill.on{background:var(--yellow-dim);border-color:var(--yellow);color:var(--yellow);font-weight:600}
+
+/* switch row */
+.switch-row{
+  display:flex;align-items:center;gap:14px;background:#0e1014;border:1px solid var(--line);
+  border-radius:9px;padding:12px 16px;cursor:pointer;user-select:none;width:fit-content;
+}
+.switch-row .st{font-weight:600;font-size:14px}
+.switch-row .sd{font-size:12px;color:var(--dim)}
+
+/* ---------- gauge ---------- */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:2px}
+.gauge-label{font-family:var(--dash);font-size:10px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase}
+.gauge-read{font-family:var(--disp);font-size:26px;font-weight:700;line-height:1;margin-top:-6px}
+
+/* ---------- results ---------- */
+.results-empty{
+  text-align:center;padding:60px 20px;color:var(--dim);
+}
+.results-empty .big{font-family:var(--disp);font-size:24px;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.results-empty p{font-size:13.5px;margin-top:8px}
+
+.deal-card{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:18px;
+}
+.deal-head{
+  display:flex;align-items:center;gap:18px;padding:18px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap;
+}
+.deal-rank{
+  font-family:var(--disp);font-size:30px;font-weight:700;color:var(--yellow);
+  border-right:1px solid var(--line);padding-right:18px;line-height:1;
+}
+.deal-name{font-family:var(--disp);font-size:23px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:1.1}
+.deal-tags{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.tag{
+  font-family:var(--dash);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 9px;border-radius:5px;border:1px solid var(--line);color:var(--muted);
+}
+.tag.easy{color:var(--green);border-color:rgba(47,220,134,.4)}
+.tag.mod{color:var(--yellow);border-color:rgba(255,190,11,.4)}
+.tag.hard{color:var(--red);border-color:rgba(255,59,47,.4)}
+.deal-gauge{margin-left:auto}
+.deal-body{padding:20px 22px}
+.num-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.num-box{background:#0e1014;border:1px solid var(--line);border-radius:9px;padding:13px 15px}
+.num-box .nl{font-family:var(--dash);font-size:9.5px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
+.num-box .nv{font-family:var(--disp);font-size:21px;font-weight:600;margin-top:4px}
+.num-box .nv.profit{color:var(--green)}
+.deal-why{font-size:13.5px;color:var(--muted);margin-top:16px;line-height:1.6}
+.chip-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.chip{
+  font-size:12px;padding:5px 11px;border-radius:6px;background:rgba(255,59,47,.08);
+  border:1px solid rgba(255,59,47,.25);color:#ff8a82;
+}
+.chip.look{background:rgba(255,190,11,.07);border-color:rgba(255,190,11,.25);color:#ffd76a}
+.sect-label{font-family:var(--dash);font-size:10px;letter-spacing:.26em;color:var(--dim);text-transform:uppercase;margin-top:16px}
+.deal-foot{display:flex;gap:10px;padding:0 22px 20px;flex-wrap:wrap}
+.mini-btn{
+  font-family:var(--dash);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
+  padding:9px 14px;border-radius:7px;border:1px solid var(--line);background:#0e1014;
+  color:var(--muted);cursor:pointer;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:7px;
+}
+.mini-btn:hover{color:var(--yellow);border-color:rgba(255,190,11,.45)}
+
+/* verdict banner */
+.verdict{
+  display:flex;align-items:center;gap:20px;padding:22px 26px;border-radius:12px;
+  border:1px solid;margin-top:20px;flex-wrap:wrap;
+}
+.verdict.buy{background:rgba(47,220,134,.07);border-color:rgba(47,220,134,.4)}
+.verdict.caution{background:rgba(255,190,11,.07);border-color:rgba(255,190,11,.4)}
+.verdict.pass{background:rgba(255,59,47,.07);border-color:rgba(255,59,47,.4)}
+.verdict .vt{font-family:var(--disp);font-size:40px;font-weight:700;text-transform:uppercase;line-height:1}
+.verdict.buy .vt{color:var(--green)}
+.verdict.caution .vt{color:var(--yellow)}
+.verdict.pass .vt{color:var(--red)}
+.verdict .vs{color:var(--muted);font-size:14px;max-width:640px}
+
+/* market summary */
+.market-note{
+  background:rgba(255,190,11,.05);border:1px solid rgba(255,190,11,.22);border-radius:10px;
+  padding:16px 20px;font-size:13.5px;color:#d8dbe2;margin-top:18px;line-height:1.65;
+}
+.market-note b{color:var(--yellow)}
+
+/* loading */
+.loader{
+  display:none;align-items:center;gap:16px;padding:26px 24px;border:1px dashed rgba(255,190,11,.35);
+  border-radius:11px;margin-top:20px;background:rgba(255,190,11,.03);
+}
+.loader.show{display:flex}
+.spinner{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  border:3px solid #2a2e38;border-top-color:var(--yellow);animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader .lt{font-family:var(--dash);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--yellow)}
+.loader .ls{font-size:12.5px;color:var(--dim);margin-top:3px}
+.err-box{
+  display:none;background:rgba(255,59,47,.07);border:1px solid rgba(255,59,47,.4);border-radius:10px;
+  padding:15px 18px;color:#ff9d96;font-size:13.5px;margin-top:16px;
+}
+.err-box.show{display:block}
+
+/* ---------- calculator ---------- */
+.calc-out{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:22px}
+.calc-box{background:#0e1014;border:1px solid var(--line);border-radius:10px;padding:18px 20px;text-align:center}
+.calc-box .cv{font-family:var(--disp);font-size:34px;font-weight:700;line-height:1}
+.calc-box .cl{font-family:var(--dash);font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase;margin-top:8px}
+.margin-track{height:12px;border-radius:8px;background:#22262f;overflow:hidden;margin-top:22px;position:relative}
+.margin-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--red),var(--yellow),var(--green));width:0%;transition:width .3s ease}
+.margin-cap{display:flex;justify-content:space-between;font-family:var(--dash);font-size:10px;letter-spacing:.18em;color:var(--dim);margin-top:8px;text-transform:uppercase}
+
+/* ---------- tracker table ---------- */
+table{width:100%;border-collapse:collapse}
+th{
+  font-family:var(--dash);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+  text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);
+}
+td{padding:13px 14px;border-bottom:1px solid #1c2029;font-size:14px}
+td.money{font-family:var(--dash);font-weight:600}
+td .pos{color:var(--green)} td .neg{color:var(--red)}
+tr:hover td{background:rgba(255,255,255,.015)}
+.del-btn{
+  background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;
+  width:28px;height:28px;cursor:pointer;font-size:14px;line-height:1;transition:all .15s;
+}
+.del-btn:hover{color:var(--red);border-color:rgba(255,59,47,.5)}
+
+/* ---------- negotiator ---------- */
+.msg-card{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-top:16px}
+.msg-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+.msg-head h5{font-family:var(--dash);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--yellow)}
+.msg-body{padding:16px 18px;font-size:14px;color:#d5d8df;white-space:pre-wrap;line-height:1.65}
+.copy-btn{
+  font-family:var(--dash);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  background:#0e1014;border:1px solid var(--line);color:var(--muted);border-radius:7px;
+  padding:7px 13px;cursor:pointer;transition:all .15s;
+}
+.copy-btn:hover{color:var(--yellow);border-color:rgba(255,190,11,.45)}
+.copy-btn.done{color:var(--green);border-color:rgba(47,220,134,.5)}
+
+@media(max-width:1100px){
+  .grid-3,.grid-4{grid-template-columns:1fr 1fr}
+}
+@media(max-width:900px){
+  .sidebar{position:static;width:100%;height:auto}
+  .main{margin-left:0}
+  .app{flex-direction:column}
+  .page{padding:26px 20px 60px}
+  .page-title{font-size:38px}
+  .hero h2{font-size:40px}
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .deal-gauge{margin-left:0}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="logo">
+      <h1>Oakmont<br>Dealership <span class="amp">AI</span></h1>
+      <div class="sub">Flip Garage</div>
+      <span class="plate">FB-MRKT • FIND · FIX · FLIP</span>
+    </div>
+
+    <div class="nav-label">Showroom</div>
+    <button class="nav-btn active" data-page="dashboard">
+      <svg viewBox="0 0 24 24"><path d="M3 13a9 9 0 0 1 18 0"/><path d="M12 13l4-4"/><path d="M2 19h20"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-btn" data-page="scanner">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8 11h6M11 8v6"/></svg>
+      Deal Scanner
+    </button>
+    <button class="nav-btn" data-page="analyzer">
+      <svg viewBox="0 0 24 24"><path d="M14 7l-8.5 8.5a2.1 2.1 0 0 0 3 3L17 10"/><path d="M13 6l5 5 3-3-5-5-3 3z"/><path d="M16 16l4 4"/></svg>
+      Deal Analyzer
+    </button>
+    <button class="nav-btn" data-page="calc">
+      <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>
+      Profit Calculator
+    </button>
+    <button class="nav-btn" data-page="tracker">
+      <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+      Flip Tracker
+    </button>
+    <button class="nav-btn" data-page="negotiator">
+      <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/><path d="M9 12h.01M13 12h.01"/></svg>
+      Negotiator
+    </button>
+
+    <div class="nav-label">Settings</div>
+    <div class="side-card">
+      <div class="t">Save State <button class="toggle on" id="saveToggle" aria-label="Toggle save state"></button></div>
+      <div class="d">Keep inputs and garage data when you come back.</div>
+    </div>
+
+    <div class="side-foot">
+      <button onclick="alert('Admin panel is boss-only. Nice try.')">⚙ Admin Panel</button>
+      <button onclick="alert('Signed out of the lot. (Not really — this is a static page.)')">⏻ Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <!-- ======== DASHBOARD ======== -->
+    <section class="page active" id="page-dashboard">
+      <div class="eyebrow">Dashboard</div>
+      <h2 class="page-title">Welcome to the lot</h2>
+      <p class="page-sub">Your Facebook Marketplace flip operation, all in one garage.</p>
+
+      <div class="panel hero" style="margin-top:30px">
+        <div class="hazard"></div>
+        <div class="hero-inner">
+          <div class="hero-eyebrow">Oakmont Dealership AI · Flip Garage</div>
+          <h2>Find. Fix.<br><span class="hl">Flip for profit.</span></h2>
+          <p>Claude scans live market data to build your hunt list of easy-fix, high-margin cars, rates every deal on the risk gauge, and preps your lowball — so you stop doom-scrolling Marketplace and start closing.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" onclick="go('scanner')">⚡ Run Deal Scanner</button>
+            <button class="btn btn-ghost" onclick="go('tracker')">↗ Open Flip Tracker</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="v" id="statScans">0</div><div class="l">Scans Run</div></div>
+        <div class="stat"><div class="v" id="statFlips">0</div><div class="l">Flips Logged</div></div>
+        <div class="stat"><div class="v money" id="statProfit">$0</div><div class="l">Total Profit</div></div>
+        <div class="stat"><div class="v" id="statAvg">$0</div><div class="l">Avg Profit / Flip</div></div>
+      </div>
+
+      <div class="tool-grid">
+        <div class="tool-card" onclick="go('scanner')">
+          <div class="top"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span><span class="arrow">→</span></div>
+          <h4>Deal Scanner</h4><p>AI hunts your local market for the easiest fix-and-flip cars with the fattest margins.</p>
+        </div>
+        <div class="tool-card" onclick="go('analyzer')">
+          <div class="top"><span class="ic"><svg viewBox="0 0 24 24"><path d="M14 7l-8.5 8.5a2.1 2.1 0 0 0 3 3L17 10"/><path d="M13 6l5 5 3-3-5-5-3 3z"/></svg></span><span class="arrow">→</span></div>
+          <h4>Deal Analyzer</h4><p>Paste any listing — get a buy/pass verdict, repair estimate, and a risk gauge reading.</p>
+        </div>
+        <div class="tool-card" onclick="go('calc')">
+          <div class="top"><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/></svg></span><span class="arrow">→</span></div>
+          <h4>Profit Calculator</h4><p>Buy price, parts, and fees in — profit, ROI, and margin health out.</p>
+        </div>
+        <div class="tool-card" onclick="go('tracker')">
+          <div class="top"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span><span class="arrow">→</span></div>
+          <h4>Flip Tracker</h4><p>Log every buy and sale, watch total profit climb on the board.</p>
+        </div>
+        <div class="tool-card" onclick="go('negotiator')">
+          <div class="top"><span class="ic"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8z"/></svg></span><span class="arrow">→</span></div>
+          <h4>Negotiator</h4><p>Ready-to-send opener, lowball, and closer scripts for Marketplace chats.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== DEAL SCANNER ======== -->
+    <section class="page" id="page-scanner">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">AI Tool</div>
+          <h2 class="page-title">Deal Scanner</h2>
+          <p class="page-sub">Set your market — Claude searches the web for the best fix/flip targets near you.</p>
+        </div>
+        <button class="btn btn-ghost" onclick="resetScanner()">+ New Scan</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>API Key</h3><span class="hint">used for Scanner &amp; Analyzer</span></div>
+        <div class="panel-body">
+          <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off">
+          <div class="note">Get yours at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> — saved in your browser when Save State is on. Leave blank if this page is running inside Claude.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="step-chip">01</span><h3>Your Market</h3></div>
+        <div class="panel-body">
+          <div class="grid-2">
+            <div class="field">
+              <label>Location *</label>
+              <input type="text" id="scanLocation" placeholder="City, State or ZIP — e.g. Orlando, FL">
+            </div>
+            <div class="field">
+              <label>Search Radius</label>
+              <div class="range-row">
+                <input type="range" id="scanRadius" min="10" max="250" step="5" value="50">
+                <span class="range-val" id="scanRadiusVal">50 mi</span>
+              </div>
+            </div>
+          </div>
+          <div class="grid-2 mt">
+            <div class="field">
+              <label>Max Buy Budget</label>
+              <div class="range-row">
+                <input type="range" id="scanBudget" min="500" max="15000" step="250" value="4000">
+                <span class="range-val" id="scanBudgetVal">$4,000</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Wrench Skill</label>
+              <div class="pills" id="skillPills">
+                <button class="pill" data-v="Beginner — bolt-on fixes only">Beginner</button>
+                <button class="pill on" data-v="Intermediate — brakes, suspension, sensors, cosmetic">Intermediate</button>
+                <button class="pill" data-v="Advanced — engine/trans work is fine">Advanced</button>
+              </div>
+            </div>
+          </div>
+          <div class="field mt">
+            <label>Vehicle Types <span class="opt">(pick any)</span></label>
+            <div class="pills" id="typePills">
+              <button class="pill on" data-v="sedans">Sedans</button>
+              <button class="pill on" data-v="trucks">Trucks</button>
+              <button class="pill" data-v="SUVs">SUVs</button>
+              <button class="pill" data-v="sports/coupes">Sports</button>
+              <button class="pill" data-v="minivans">Minivans</button>
+              <button class="pill" data-v="motorcycles">Motorcycles</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="step-chip">02</span><h3>Run It</h3><span class="hint">Claude can't log in to Facebook — it researches live pricing &amp; known-issue data, builds your target list, then hands you one-tap Marketplace searches.</span></div>
+        <div class="panel-body">
+          <button class="btn btn-primary btn-big" id="scanBtn" onclick="runScanner()">⚡ Scan My Market</button>
+          <div class="loader" id="scanLoader">
+            <div class="spinner"></div>
+            <div><div class="lt" id="scanLoadTitle">Firing up the scanner…</div><div class="ls">Live web research — usually 30–90 seconds.</div></div>
+          </div>
+          <div class="err-box" id="scanErr"></div>
+        </div>
+      </div>
+
+      <div id="scanResults">
+        <div class="panel" style="margin-top:22px">
+          <div class="redline-bar"></div>
+          <div class="results-empty">
+            <div class="big">No targets on the board yet</div>
+            <p>Set your market above and hit Scan — your hunt list lands here with risk gauges and profit estimates.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== DEAL ANALYZER ======== -->
+    <section class="page" id="page-analyzer">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">AI Tool</div>
+          <h2 class="page-title">Deal Analyzer</h2>
+          <p class="page-sub">Found something on Marketplace? Paste it in — get a verdict before you drive out.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="step-chip">01</span><h3>The Listing</h3></div>
+        <div class="panel-body">
+          <div class="grid-3">
+            <div class="field">
+              <label>Vehicle *</label>
+              <input type="text" id="anCar" placeholder="e.g. 2011 Honda Accord EX">
+            </div>
+            <div class="field">
+              <label>Asking Price *</label>
+              <input type="number" id="anPrice" placeholder="2500" min="0">
+            </div>
+            <div class="field">
+              <label>Mileage <span class="opt">(optional)</span></label>
+              <input type="number" id="anMiles" placeholder="160000" min="0">
+            </div>
+          </div>
+          <div class="field mt">
+            <label>Listing Description / What the seller says *</label>
+            <textarea id="anDesc" placeholder="Paste the listing text — condition notes, 'needs work', 'ran when parked', anything the seller wrote…"></textarea>
+          </div>
+          <div class="grid-2 mt">
+            <div class="field">
+              <label>Your Location <span class="opt">(for resale pricing)</span></label>
+              <input type="text" id="anLocation" placeholder="City, State">
+            </div>
+            <div class="field">
+              <label>Web Research</label>
+              <div class="switch-row" onclick="flipSwitch('anSearch')">
+                <button class="toggle on" id="anSearch" aria-label="Toggle web research"></button>
+                <div><div class="st">Check live comps</div><div class="sd">Slower, but prices against real market data</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="step-chip">02</span><h3>Verdict</h3></div>
+        <div class="panel-body">
+          <button class="btn btn-primary btn-big" id="anBtn" onclick="runAnalyzer()">🔧 Analyze This Deal</button>
+          <div class="loader" id="anLoader">
+            <div class="spinner"></div>
+            <div><div class="lt" id="anLoadTitle">Putting it on the lift…</div><div class="ls">Checking known issues, repair costs, and resale comps.</div></div>
+          </div>
+          <div class="err-box" id="anErr"></div>
+        </div>
+      </div>
+
+      <div id="anResults"></div>
+    </section>
+
+    <!-- ======== PROFIT CALC ======== -->
+    <section class="page" id="page-calc">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">Math Bay</div>
+          <h2 class="page-title">Profit Calculator</h2>
+          <p class="page-sub">Know your number before you send the offer.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="hazard"></div>
+        <div class="panel-body">
+          <div class="grid-4">
+            <div class="field"><label>Buy Price</label><input type="number" id="cBuy" value="2500" min="0"></div>
+            <div class="field"><label>Parts &amp; Repairs</label><input type="number" id="cParts" value="450" min="0"></div>
+            <div class="field"><label>Transport / Title / Misc</label><input type="number" id="cMisc" value="150" min="0"></div>
+            <div class="field"><label>Target Sale Price</label><input type="number" id="cSale" value="4800" min="0"></div>
+          </div>
+
+          <div class="calc-out">
+            <div class="calc-box"><div class="cv" id="cCost">$0</div><div class="cl">All-In Cost</div></div>
+            <div class="calc-box"><div class="cv" id="cProfit" style="color:var(--green)">$0</div><div class="cl">Net Profit</div></div>
+            <div class="calc-box"><div class="cv" id="cRoi">0%</div><div class="cl">ROI</div></div>
+            <div class="calc-box"><div class="cv" id="cBreak">$0</div><div class="cl">Break-Even Price</div></div>
+          </div>
+
+          <div class="margin-track"><div class="margin-fill" id="cFill"></div></div>
+          <div class="margin-cap"><span>Losing money</span><span id="cHealth">—</span><span>Fat margin</span></div>
+          <div class="note" style="margin-top:14px">Local Facebook Marketplace sales have no platform fee — just remember title transfer, tax where it applies, and your gas money.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== FLIP TRACKER ======== -->
+    <section class="page" id="page-tracker">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">The Books</div>
+          <h2 class="page-title">Flip Tracker</h2>
+          <p class="page-sub">Log every flip. The dashboard scoreboard feeds off this.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="step-chip">+</span><h3>Log a Flip</h3></div>
+        <div class="panel-body">
+          <div class="grid-4">
+            <div class="field"><label>Vehicle</label><input type="text" id="tCar" placeholder="2009 Civic LX"></div>
+            <div class="field"><label>Bought For</label><input type="number" id="tBuy" placeholder="1800" min="0"></div>
+            <div class="field"><label>Repairs / Costs</label><input type="number" id="tCost" placeholder="300" min="0"></div>
+            <div class="field"><label>Sold For</label><input type="number" id="tSold" placeholder="3500" min="0"></div>
+          </div>
+          <button class="btn btn-primary mt" onclick="addFlip()">+ Add to the Books</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="redline-bar"></div>
+        <div class="panel-body" style="padding:0">
+          <table>
+            <thead><tr><th>Vehicle</th><th>Bought</th><th>Costs</th><th>Sold</th><th>Profit</th><th>Date</th><th></th></tr></thead>
+            <tbody id="flipRows">
+              <tr><td colspan="7" style="text-align:center;color:var(--dim);padding:34px">No flips logged yet. First one's the hardest.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== NEGOTIATOR ======== -->
+    <section class="page" id="page-negotiator">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">Closer Scripts</div>
+          <h2 class="page-title">Negotiator</h2>
+          <p class="page-sub">Fill in the deal — copy the message that fits the moment.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="step-chip">01</span><h3>The Deal</h3></div>
+        <div class="panel-body">
+          <div class="grid-3">
+            <div class="field"><label>Vehicle</label><input type="text" id="nCar" placeholder="2012 Camry" oninput="renderMsgs()"></div>
+            <div class="field"><label>Asking Price</label><input type="number" id="nAsk" placeholder="3500" min="0" oninput="renderMsgs()"></div>
+            <div class="field"><label>Your Offer</label><input type="number" id="nOffer" placeholder="2600" min="0" oninput="renderMsgs()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="msgList"></div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* =============== safe storage (works hosted OR sandboxed) =============== */
+const store = {
+  mem:{},
+  get(k){ try{ const v = localStorage.getItem(k); return v!==null? v : (k in this.mem? this.mem[k]:null); }catch(e){ return k in this.mem? this.mem[k]:null; } },
+  set(k,v){ this.mem[k]=v; try{ localStorage.setItem(k,v); }catch(e){} },
+  del(k){ delete this.mem[k]; try{ localStorage.removeItem(k); }catch(e){} }
+};
+let saveOn = store.get('odai_save') !== '0';
+
+/* =============== nav =============== */
+function go(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
+  window.scrollTo({top:0});
+}
+document.querySelectorAll('.nav-btn').forEach(b=> b.addEventListener('click', ()=>go(b.dataset.page)));
+
+/* =============== save-state toggle =============== */
+const saveToggle = document.getElementById('saveToggle');
+function paintSave(){ saveToggle.classList.toggle('on', saveOn); }
+saveToggle.addEventListener('click', ()=>{ saveOn=!saveOn; store.set('odai_save', saveOn?'1':'0'); paintSave(); if(saveOn) persistInputs(); });
+paintSave();
+
+/* persist basic inputs */
+const PERSIST = ['apiKey','scanLocation','anLocation','nCar','nAsk','nOffer'];
+function persistInputs(){ if(!saveOn) return; PERSIST.forEach(id=>{ const el=document.getElementById(id); if(el) store.set('odai_'+id, el.value); }); }
+PERSIST.forEach(id=>{ const el=document.getElementById(id); if(!el) return;
+  const v = store.get('odai_'+id); if(v!==null && saveOn) el.value=v;
+  el.addEventListener('input', persistInputs);
+});
+
+/* =============== helpers =============== */
+const fmt$ = n => '$' + Math.round(Number(n)||0).toLocaleString();
+function esc(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function flipSwitch(id){ document.getElementById(id).classList.toggle('on'); }
+
+/* pills */
+document.querySelectorAll('#skillPills .pill').forEach(p=> p.addEventListener('click', ()=>{
+  document.querySelectorAll('#skillPills .pill').forEach(x=>x.classList.remove('on')); p.classList.add('on');
+}));
+document.querySelectorAll('#typePills .pill').forEach(p=> p.addEventListener('click', ()=> p.classList.toggle('on')));
+
+/* sliders */
+function bindRange(id, outId, fmt){
+  const r=document.getElementById(id), o=document.getElementById(outId);
+  const paint=()=>{ o.textContent = fmt(r.value); const pct=(r.value-r.min)/(r.max-r.min)*100; r.style.setProperty('--fill', pct+'%'); };
+  r.addEventListener('input', paint); paint();
+}
+bindRange('scanRadius','scanRadiusVal', v=> v+' mi');
+bindRange('scanBudget','scanBudgetVal', v=> fmt$(v));
+
+/* =============== risk gauge (SVG tachometer) =============== */
+function gauge(risk, size){
+  risk = Math.max(0, Math.min(100, Math.round(risk)));
+  const w = size||150, h = w*0.62, cx=w/2, cy=h-8, r=w/2-12;
+  const a = -180 + (risk*1.8); // needle angle
+  const col = risk<35? 'var(--green)' : risk<70? 'var(--yellow)' : 'var(--red)';
+  const arc=(a1,a2,color)=>{
+    const p=(ang)=>[cx + r*Math.cos(ang*Math.PI/180), cy + r*Math.sin(ang*Math.PI/180)];
+    const [x1,y1]=p(a1), [x2,y2]=p(a2);
+    return `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${color}" stroke-width="7" fill="none" stroke-linecap="round"/>`;
+  };
+  let ticks='';
+  for(let i=0;i<=10;i++){
+    const ang=(-180+i*18)*Math.PI/180;
+    const x1=cx+(r-11)*Math.cos(ang), y1=cy+(r-11)*Math.sin(ang);
+    const x2=cx+(r-4)*Math.cos(ang),  y2=cy+(r-4)*Math.sin(ang);
+    ticks+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#3a3f4c" stroke-width="2"/>`;
+  }
+  const nx=cx+(r-16)*Math.cos(a*Math.PI/180), ny=cy+(r-16)*Math.sin(a*Math.PI/180);
+  return `
+  <div class="gauge-wrap">
+    <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Risk ${risk} out of 100">
+      ${arc(-180,-117,'rgba(47,220,134,.85)')}
+      ${arc(-115,-63,'rgba(255,190,11,.85)')}
+      ${arc(-61,0,'rgba(255,59,47,.9)')}
+      ${ticks}
+      <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${col}" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="${cx}" cy="${cy}" r="6" fill="#0b0c0f" stroke="${col}" stroke-width="3"/>
+    </svg>
+    <div class="gauge-read" style="color:${col}">${risk}</div>
+    <div class="gauge-label">Risk</div>
+  </div>`;
+}
+
+/* =============== Claude API =============== */
+async function callClaude(prompt, useSearch, maxTokens){
+  const key = (document.getElementById('apiKey').value||'').trim();
+  const body = {
+    model: 'claude-sonnet-4-6',
+    max_tokens: maxTokens || 4000,
+    messages: [{ role:'user', content: prompt }]
+  };
+  if(useSearch) body.tools = [{ type:'web_search_20250305', name:'web_search' }];
+  const headers = { 'Content-Type':'application/json' };
+  if(key){
+    headers['x-api-key'] = key;
+    headers['anthropic-version'] = '2023-06-01';
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST', headers, body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    let msg = 'API error ' + res.status;
+    try{ const j = await res.json(); msg = j.error?.message || msg; }catch(e){}
+    if(res.status===401) msg += ' — check your API key up top.';
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+}
+function extractJSON(text){
+  const cleaned = text.replace(/```json|```/g,'');
+  const s = cleaned.indexOf('{'), e = cleaned.lastIndexOf('}');
+  if(s===-1||e===-1) throw new Error('Could not read the AI response — try running it again.');
+  return JSON.parse(cleaned.slice(s, e+1));
+}
+function cycleLoader(el, msgs){
+  let i=0; el.textContent=msgs[0];
+  return setInterval(()=>{ i=(i+1)%msgs.length; el.textContent=msgs[i]; }, 3500);
+}
+
+/* =============== DEAL SCANNER =============== */
+function selectedTypes(){
+  return [...document.querySelectorAll('#typePills .pill.on')].map(p=>p.dataset.v);
+}
+function resetScanner(){
+  document.getElementById('scanResults').innerHTML = `
+    <div class="panel" style="margin-top:22px"><div class="redline-bar"></div>
+      <div class="results-empty"><div class="big">No targets on the board yet</div>
+      <p>Set your market above and hit Scan — your hunt list lands here with risk gauges and profit estimates.</p></div>
+    </div>`;
+}
+async function runScanner(){
+  const loc = document.getElementById('scanLocation').value.trim();
+  const err = document.getElementById('scanErr'); err.classList.remove('show');
+  if(!loc){ err.textContent='Drop in a location first — the market matters.'; err.classList.add('show'); return; }
+
+  const radius = document.getElementById('scanRadius').value;
+  const budget = document.getElementById('scanBudget').value;
+  const skill = document.querySelector('#skillPills .pill.on')?.dataset.v || 'Intermediate';
+  const types = selectedTypes(); 
+  const typeStr = types.length? types.join(', ') : 'any common vehicle type';
+
+  const btn = document.getElementById('scanBtn'), loader=document.getElementById('scanLoader');
+  btn.disabled=true; loader.classList.add('show');
+  const timer = cycleLoader(document.getElementById('scanLoadTitle'), [
+    'Scanning the market…','Pulling regional pricing data…','Cross-checking known cheap fixes…','Ranking targets by margin…','Calibrating risk gauges…'
+  ]);
+
+  const prompt = `You are a used-car flipping expert helping someone hunt Facebook Marketplace deals.
+
+Their market: ${loc}, within ${radius} miles. Max buy budget: $${budget}. Mechanical skill: ${skill}. Vehicle types of interest: ${typeStr}.
+
+Use web search to research CURRENT used-car pricing in and around that region (Facebook Marketplace asking prices, Craigslist, KBB/Edmunds private-party values, regional market reports). Focus on vehicles that are famously easy/cheap to fix and resell fast — the classic flip candidates where sellers underprice because of a scary-sounding but cheap problem.
+
+Return ONLY a JSON object, no other text, no markdown fences, in exactly this shape:
+{
+ "market_summary": "2-4 sentences on this local market: what moves fast, what's overpriced, seasonal notes",
+ "targets": [
+   {
+     "rank": 1,
+     "vehicle": "Make Model",
+     "years": "2008-2012",
+     "buy_low": 1500, "buy_high": 2500,
+     "fix_low": 100, "fix_high": 500,
+     "resale_low": 3200, "resale_high": 4200,
+     "est_profit": 1400,
+     "risk": 25,
+     "difficulty": "Easy",
+     "why": "1-2 sentences: why this is a great flip in THIS market right now",
+     "common_cheap_fixes": ["the scary-sounding issues that are actually cheap to fix"],
+     "red_flags": ["dealbreakers to walk away from"],
+     "search_terms": ["exact short search queries to type into Marketplace"]
+   }
+ ]
+}
+Rules: 5 to 7 targets, sorted best first. All prices realistic for that region and under the $${budget} buy budget. "risk" is 0-100 (0=safe money, 100=money pit). "difficulty" is Easy, Moderate, or Hard and must respect their skill level (${skill}) — do not recommend Hard flips to a Beginner. Keep every string tight.`;
+
+  try{
+    const text = await callClaude(prompt, true, 6000);
+    const data = extractJSON(text);
+    renderScan(data);
+    bumpStat('odai_scans');
+  }catch(e){
+    err.textContent = e.message; err.classList.add('show');
+  }finally{
+    clearInterval(timer); btn.disabled=false; loader.classList.remove('show');
+  }
+}
+function renderScan(data){
+  const wrap = document.getElementById('scanResults');
+  let html = '';
+  if(data.market_summary){
+    html += `<div class="market-note"><b>Market read:</b> ${esc(data.market_summary)}</div>`;
+  }
+  (data.targets||[]).forEach((t,i)=>{
+    const diff = (t.difficulty||'').toLowerCase();
+    const diffClass = diff.startsWith('e')?'easy': diff.startsWith('m')?'mod':'hard';
+    const fbq = encodeURIComponent((t.search_terms&&t.search_terms[0]) || (t.vehicle||''));
+    html += `
+    <div class="deal-card">
+      <div class="deal-head">
+        <div class="deal-rank">${String(t.rank||i+1).padStart(2,'0')}</div>
+        <div>
+          <div class="deal-name">${esc(t.vehicle||'Unknown')} <span style="color:var(--dim);font-size:16px">${esc(t.years||'')}</span></div>
+          <div class="deal-tags">
+            <span class="tag ${diffClass}">${esc(t.difficulty||'—')} fix</span>
+            <span class="tag">Buy ${fmt$(t.buy_low)}–${fmt$(t.buy_high)}</span>
+          </div>
+        </div>
+        <div class="deal-gauge">${gauge(t.risk??50, 130)}</div>
+      </div>
+      <div class="deal-body">
+        <div class="num-grid">
+          <div class="num-box"><div class="nl">Buy Range</div><div class="nv">${fmt$(t.buy_low)}–${fmt$(t.buy_high)}</div></div>
+          <div class="num-box"><div class="nl">Fix Cost</div><div class="nv">${fmt$(t.fix_low)}–${fmt$(t.fix_high)}</div></div>
+          <div class="num-box"><div class="nl">Resale</div><div class="nv">${fmt$(t.resale_low)}–${fmt$(t.resale_high)}</div></div>
+          <div class="num-box"><div class="nl">Est. Profit</div><div class="nv profit">+${fmt$(t.est_profit)}</div></div>
+        </div>
+        <div class="deal-why">${esc(t.why||'')}</div>
+        ${t.common_cheap_fixes?.length? `<div class="sect-label">Cheap fixes that scare other buyers off</div><div class="chip-row">${t.common_cheap_fixes.map(x=>`<span class="chip look">🔧 ${esc(x)}</span>`).join('')}</div>`:''}
+        ${t.red_flags?.length? `<div class="sect-label">Walk away if</div><div class="chip-row">${t.red_flags.map(x=>`<span class="chip">⛔ ${esc(x)}</span>`).join('')}</div>`:''}
+      </div>
+      <div class="deal-foot">
+        <a class="mini-btn" href="https://www.facebook.com/marketplace/search?query=${fbq}" target="_blank" rel="noopener">▸ Search Marketplace</a>
+        ${(t.search_terms||[]).slice(0,3).map(q=>`<button class="mini-btn" onclick="copyText(this, ${JSON.stringify(String(q)).replace(/"/g,'&quot;')})">⧉ ${esc(q)}</button>`).join('')}
+      </div>
+    </div>`;
+  });
+  wrap.innerHTML = html || '<div class="err-box show">Scanner came back empty — run it again.</div>';
+  wrap.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* =============== DEAL ANALYZER =============== */
+async function runAnalyzer(){
+  const car = document.getElementById('anCar').value.trim();
+  const price = document.getElementById('anPrice').value;
+  const desc = document.getElementById('anDesc').value.trim();
+  const miles = document.getElementById('anMiles').value;
+  const loc = document.getElementById('anLocation').value.trim();
+  const useSearch = document.getElementById('anSearch').classList.contains('on');
+  const err = document.getElementById('anErr'); err.classList.remove('show');
+  if(!car || !price || !desc){ err.textContent='Need at least the vehicle, asking price, and the listing text.'; err.classList.add('show'); return; }
+
+  const btn=document.getElementById('anBtn'), loader=document.getElementById('anLoader');
+  btn.disabled=true; loader.classList.add('show');
+  const timer = cycleLoader(document.getElementById('anLoadTitle'), [
+    'Putting it on the lift…','Decoding seller-speak…','Pricing the repairs…','Pulling resale comps…','Reading the risk gauge…'
+  ]);
+
+  const prompt = `You are a veteran used-car flipper evaluating a Facebook Marketplace listing.
+
+LISTING:
+Vehicle: ${car}
+Asking price: $${price}
+${miles? 'Mileage: '+miles : ''}
+${loc? 'Buyer location: '+loc : ''}
+Seller's description: """${desc}"""
+
+${useSearch? 'Use web search to check current private-party resale values for this vehicle in that region and typical repair costs for the issues described.' : 'Use your knowledge of typical values and repair costs.'}
+
+Return ONLY a JSON object, no other text, no markdown fences:
+{
+ "verdict": "BUY" | "CAUTION" | "PASS",
+ "verdict_line": "one punchy sentence explaining the verdict",
+ "risk": 0-100,
+ "est_repair_low": 0, "est_repair_high": 0,
+ "arv_low": 0, "arv_high": 0,
+ "est_profit": 0,
+ "seller_speak": "what the description is really telling you, decoded in 1-2 sentences",
+ "red_flags": ["specific concerns from this listing"],
+ "ask_seller": ["exact questions to send before driving out"],
+ "check_in_person": ["what to inspect/test at the meetup"],
+ "opening_offer": 0,
+ "offer_message": "a short, friendly, ready-to-send Marketplace message that opens at the opening_offer with a reason"
+}
+Rules: est_profit assumes buying near opening_offer, mid repair cost, mid ARV. risk 0=safe money, 100=money pit. Be honest — PASS is a valid answer.`;
+
+  try{
+    const text = await callClaude(prompt, useSearch, 4500);
+    const d = extractJSON(text);
+    renderAnalysis(d);
+  }catch(e){
+    err.textContent = e.message; err.classList.add('show');
+  }finally{
+    clearInterval(timer); btn.disabled=false; loader.classList.remove('show');
+  }
+}
+function renderAnalysis(d){
+  const v = (d.verdict||'CAUTION').toUpperCase();
+  const cls = v==='BUY'?'buy': v==='PASS'?'pass':'caution';
+  const wrap = document.getElementById('anResults');
+  wrap.innerHTML = `
+  <div class="verdict ${cls}">
+    <div class="vt">${esc(v)}</div>
+    <div class="vs">${esc(d.verdict_line||'')}</div>
+    <div style="margin-left:auto">${gauge(d.risk??50, 150)}</div>
+  </div>
+  <div class="panel" style="margin-top:18px">
+    <div class="redline-bar"></div>
+    <div class="panel-body">
+      <div class="num-grid">
+        <div class="num-box"><div class="nl">Repair Estimate</div><div class="nv">${fmt$(d.est_repair_low)}–${fmt$(d.est_repair_high)}</div></div>
+        <div class="num-box"><div class="nl">After-Repair Value</div><div class="nv">${fmt$(d.arv_low)}–${fmt$(d.arv_high)}</div></div>
+        <div class="num-box"><div class="nl">Est. Profit</div><div class="nv profit">+${fmt$(d.est_profit)}</div></div>
+        <div class="num-box"><div class="nl">Open At</div><div class="nv" style="color:var(--yellow)">${fmt$(d.opening_offer)}</div></div>
+      </div>
+      ${d.seller_speak? `<div class="market-note" style="margin-top:16px"><b>Seller-speak, decoded:</b> ${esc(d.seller_speak)}</div>`:''}
+      ${d.red_flags?.length? `<div class="sect-label">Red flags</div><div class="chip-row">${d.red_flags.map(x=>`<span class="chip">⛔ ${esc(x)}</span>`).join('')}</div>`:''}
+      ${d.ask_seller?.length? `<div class="sect-label">Ask before you drive out</div><div class="chip-row">${d.ask_seller.map(x=>`<span class="chip look">💬 ${esc(x)}</span>`).join('')}</div>`:''}
+      ${d.check_in_person?.length? `<div class="sect-label">Check at the meetup</div><div class="chip-row">${d.check_in_person.map(x=>`<span class="chip look">🔍 ${esc(x)}</span>`).join('')}</div>`:''}
+    </div>
+  </div>
+  ${d.offer_message? `
+  <div class="msg-card">
+    <div class="msg-head"><h5>Opening Offer Message</h5><button class="copy-btn" onclick="copyText(this, this.closest('.msg-card').querySelector('.msg-body').textContent)">⧉ Copy</button></div>
+    <div class="msg-body">${esc(d.offer_message)}</div>
+  </div>`:''}`;
+  wrap.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* =============== PROFIT CALC =============== */
+['cBuy','cParts','cMisc','cSale'].forEach(id=> document.getElementById(id).addEventListener('input', calc));
+function calc(){
+  const buy=+document.getElementById('cBuy').value||0;
+  const parts=+document.getElementById('cParts').value||0;
+  const misc=+document.getElementById('cMisc').value||0;
+  const sale=+document.getElementById('cSale').value||0;
+  const cost=buy+parts+misc, profit=sale-cost;
+  const roi = cost>0? (profit/cost*100) : 0;
+  document.getElementById('cCost').textContent=fmt$(cost);
+  const pEl=document.getElementById('cProfit');
+  pEl.textContent=(profit<0?'-':'+')+fmt$(Math.abs(profit));
+  pEl.style.color = profit>=0? 'var(--green)':'var(--red)';
+  document.getElementById('cRoi').textContent=Math.round(roi)+'%';
+  document.getElementById('cBreak').textContent=fmt$(cost);
+  const pct=Math.max(0,Math.min(100,(roi+25)/125*100));
+  document.getElementById('cFill').style.width=pct+'%';
+  document.getElementById('cHealth').textContent =
+    profit<0? 'Underwater' : roi<15? 'Thin — negotiate harder' : roi<40? 'Solid flip' : roi<80? 'Great deal' : 'Steal of the week';
+}
+calc();
+
+/* =============== FLIP TRACKER =============== */
+function loadFlips(){ try{ return JSON.parse(store.get('odai_flips')||'[]'); }catch(e){ return []; } }
+function saveFlips(f){ store.set('odai_flips', JSON.stringify(f)); }
+function addFlip(){
+  const car=document.getElementById('tCar').value.trim();
+  const buy=+document.getElementById('tBuy').value||0;
+  const cost=+document.getElementById('tCost').value||0;
+  const sold=+document.getElementById('tSold').value||0;
+  if(!car){ alert('Give the flip a name — at least the make/model.'); return; }
+  const flips=loadFlips();
+  flips.unshift({car,buy,cost,sold,date:new Date().toLocaleDateString()});
+  saveFlips(flips);
+  ['tCar','tBuy','tCost','tSold'].forEach(id=>document.getElementById(id).value='');
+  renderFlips(); paintStats();
+}
+function delFlip(i){ const f=loadFlips(); f.splice(i,1); saveFlips(f); renderFlips(); paintStats(); }
+function renderFlips(){
+  const flips=loadFlips(), tb=document.getElementById('flipRows');
+  if(!flips.length){ tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--dim);padding:34px">No flips logged yet. First one\'s the hardest.</td></tr>'; return; }
+  tb.innerHTML = flips.map((f,i)=>{
+    const p=f.sold-f.buy-f.cost;
+    return `<tr>
+      <td style="font-weight:600">${esc(f.car)}</td>
+      <td class="money">${fmt$(f.buy)}</td>
+      <td class="money">${fmt$(f.cost)}</td>
+      <td class="money">${fmt$(f.sold)}</td>
+      <td class="money"><span class="${p>=0?'pos':'neg'}">${p>=0?'+':'-'}${fmt$(Math.abs(p))}</span></td>
+      <td style="color:var(--dim);font-size:13px">${esc(f.date)}</td>
+      <td><button class="del-btn" onclick="delFlip(${i})" aria-label="Delete flip">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+function bumpStat(key){ store.set(key, String((+store.get(key)||0)+1)); paintStats(); }
+function paintStats(){
+  const flips=loadFlips();
+  const total=flips.reduce((s,f)=>s+(f.sold-f.buy-f.cost),0);
+  document.getElementById('statScans').textContent = +store.get('odai_scans')||0;
+  document.getElementById('statFlips').textContent = flips.length;
+  document.getElementById('statProfit').textContent = (total<0?'-':'+')+fmt$(Math.abs(total));
+  document.getElementById('statProfit').style.color = total>=0? 'var(--green)':'var(--red)';
+  document.getElementById('statAvg').textContent = flips.length? fmt$(total/flips.length) : '$0';
+}
+renderFlips(); paintStats();
+
+/* =============== NEGOTIATOR =============== */
+function renderMsgs(){
+  persistInputs();
+  const car = document.getElementById('nCar').value.trim() || 'the car';
+  const ask = +document.getElementById('nAsk').value||0;
+  const offer = +document.getElementById('nOffer').value|| Math.round(ask*0.75);
+  const o = fmt$(offer), a = ask? fmt$(ask):'the asking price';
+  const msgs = [
+    ['The Opener', `Hey! Is the ${car} still available? I can come take a look this week — cash in hand. Anything I should know about it before I drive out?`],
+    ['The Respectful Lowball', `Hey, saw your listing for the ${car}. I know you're asking ${a} — I'm a cash buyer and can pick it up as-is, no haggling at the meetup. Would you take ${o}? If so I can come today or tomorrow.`],
+    ['The Mechanic Angle', `Thanks for letting me check out the ${car}. Given what it needs to get right (parts + my time), I'd be at ${o} cash. That's fair for its condition and I can close right now — no waiting on other buyers who'll ghost you.`],
+    ['The Cash-Today Close', `I get that ${a} is your number. Here's mine: ${o}, cash, today, and it's off your hands in an hour. No test-drive circus, no "let me ask my wife." If someone else offers more this week, take it — but I'm ready right now.`],
+    ['The Walk-Away', `All good — ${o} is my ceiling on this one, so I'll pass for now. If it's still sitting in a week or two and you change your mind, shoot me a message. Good luck with the sale!`]
+  ];
+  document.getElementById('msgList').innerHTML = msgs.map(([title,body])=>`
+    <div class="msg-card">
+      <div class="msg-head"><h5>${title}</h5><button class="copy-btn" onclick="copyText(this, this.closest('.msg-card').querySelector('.msg-body').textContent)">⧉ Copy</button></div>
+      <div class="msg-body">${esc(body)}</div>
+    </div>`).join('');
+}
+renderMsgs();
+
+/* =============== copy helper =============== */
+function copyText(btn, text){
+  const done=()=>{ const old=btn.textContent; btn.textContent='✓ Copied'; btn.classList.add('done'); setTimeout(()=>{btn.textContent=old; btn.classList.remove('done');},1600); };
+  if(navigator.clipboard?.writeText){ navigator.clipboard.writeText(text).then(done).catch(()=>fallback()); } else fallback();
+  function fallback(){
+    const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); }catch(e){} document.body.removeChild(ta);
+  }
+}
+</script>
+</body>
+</html>
