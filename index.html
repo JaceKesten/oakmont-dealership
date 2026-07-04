@@ -578,8 +578,16 @@ tr:hover td{background:rgba(255,255,255,.015)}
       </div>
 
       <div class="panel">
-        <div class="panel-head"><span class="step-chip">02</span><h3>Run It</h3><span class="hint">Claude can't log in to Facebook — it researches live pricing &amp; known-issue data, builds your target list, then hands you one-tap Marketplace searches.</span></div>
+        <div class="panel-head"><span class="step-chip">02</span><h3>Run It</h3><span class="hint">Claude can't log in to Facebook — it builds your target list &amp; hands you one-tap Marketplace searches.</span></div>
         <div class="panel-body">
+          <div class="field" style="margin-bottom:18px">
+            <label>Scan Mode</label>
+            <div class="pills" id="modePills">
+              <button class="pill on" data-v="quick">Quick — no web search, ~1¢, fast</button>
+              <button class="pill" data-v="deep">Deep — 3 live web searches, ~5–15¢, slower</button>
+            </div>
+            <div class="note">Quick uses Claude's built-in knowledge of flip-friendly cars and typical pricing. Deep checks live regional comps — capped at 3 searches so it can't run up your bill.</div>
+          </div>
           <button class="btn btn-primary btn-big" id="scanBtn" onclick="runScanner()">⚡ Scan My Market</button>
           <div class="loader" id="scanLoader">
             <div class="spinner"></div>
@@ -640,7 +648,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
               <label>Web Research</label>
               <div class="switch-row" onclick="flipSwitch('anSearch')">
                 <button class="toggle on" id="anSearch" aria-label="Toggle web research"></button>
-                <div><div class="st">Check live comps</div><div class="sd">Slower, but prices against real market data</div></div>
+                <div><div class="st">Check live comps</div><div class="sd">Max 2 web searches (~5¢) — off is near-free &amp; faster</div></div>
               </div>
             </div>
           </div>
@@ -802,6 +810,9 @@ document.querySelectorAll('#skillPills .pill').forEach(p=> p.addEventListener('c
   document.querySelectorAll('#skillPills .pill').forEach(x=>x.classList.remove('on')); p.classList.add('on');
 }));
 document.querySelectorAll('#typePills .pill').forEach(p=> p.addEventListener('click', ()=> p.classList.toggle('on')));
+document.querySelectorAll('#modePills .pill').forEach(p=> p.addEventListener('click', ()=>{
+  document.querySelectorAll('#modePills .pill').forEach(x=>x.classList.remove('on')); p.classList.add('on');
+}));
 
 /* sliders */
 function bindRange(id, outId, fmt){
@@ -847,31 +858,50 @@ function gauge(risk, size){
 }
 
 /* =============== Claude API =============== */
-async function callClaude(prompt, useSearch, maxTokens){
+/* maxSearches caps cost hard: each web search costs money AND stuffs thousands
+   of result tokens into context. 2-3 searches = a few cents. Uncapped = $$$. */
+async function callClaude(prompt, maxSearches, maxTokens){
   const key = (document.getElementById('apiKey').value||'').trim();
-  const body = {
-    model: 'claude-sonnet-4-6',
-    max_tokens: maxTokens || 4000,
-    messages: [{ role:'user', content: prompt }]
-  };
-  if(useSearch) body.tools = [{ type:'web_search_20250305', name:'web_search' }];
   const headers = { 'Content-Type':'application/json' };
   if(key){
     headers['x-api-key'] = key;
     headers['anthropic-version'] = '2023-06-01';
     headers['anthropic-dangerous-direct-browser-access'] = 'true';
   }
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST', headers, body: JSON.stringify(body)
-  });
-  if(!res.ok){
-    let msg = 'API error ' + res.status;
-    try{ const j = await res.json(); msg = j.error?.message || msg; }catch(e){}
-    if(res.status===401) msg += ' — check your API key up top.';
-    throw new Error(msg);
+  const messages = [{ role:'user', content: prompt }];
+  let textOut = '';
+  // Web search runs agentically: the API may return stop_reason "pause_turn"
+  // mid-research, meaning "send the conversation back to continue". Loop until done.
+  for(let hop=0; hop<6; hop++){
+    const body = {
+      model: 'claude-sonnet-4-6',
+      max_tokens: maxTokens || 4000,
+      messages
+    };
+    if(maxSearches>0) body.tools = [{ type:'web_search_20250305', name:'web_search', max_uses: maxSearches }];
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers, body: JSON.stringify(body)
+    });
+    if(!res.ok){
+      let msg = 'API error ' + res.status;
+      try{ const j = await res.json(); msg = j.error?.message || msg; }catch(e){}
+      if(res.status===401) msg += ' — check your API key up top.';
+      if(res.status===429) msg += ' — rate limited, give it a minute.';
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    textOut += data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    if(data.stop_reason === 'pause_turn'){
+      // continue the turn: echo the assistant content back and go again
+      messages.push({ role:'assistant', content: data.content });
+      continue;
+    }
+    if(data.stop_reason === 'max_tokens' && !textOut.includes('}')){
+      throw new Error('Response got cut off before finishing — run it again (it usually completes on retry).');
+    }
+    break;
   }
-  const data = await res.json();
-  return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  return textOut;
 }
 function extractJSON(text){
   const cleaned = text.replace(/```json|```/g,'');
@@ -906,17 +936,21 @@ async function runScanner(){
   const types = selectedTypes(); 
   const typeStr = types.length? types.join(', ') : 'any common vehicle type';
 
+  const deep = document.querySelector('#modePills .pill.on')?.dataset.v === 'deep';
   const btn = document.getElementById('scanBtn'), loader=document.getElementById('scanLoader');
   btn.disabled=true; loader.classList.add('show');
-  const timer = cycleLoader(document.getElementById('scanLoadTitle'), [
+  const timer = cycleLoader(document.getElementById('scanLoadTitle'), deep? [
     'Scanning the market…','Pulling regional pricing data…','Cross-checking known cheap fixes…','Ranking targets by margin…','Calibrating risk gauges…'
-  ]);
+  ] : ['Building your hunt list…','Ranking targets by margin…','Calibrating risk gauges…']);
 
   const prompt = `You are a used-car flipping expert helping someone hunt Facebook Marketplace deals.
 
 Their market: ${loc}, within ${radius} miles. Max buy budget: $${budget}. Mechanical skill: ${skill}. Vehicle types of interest: ${typeStr}.
 
-Use web search to research CURRENT used-car pricing in and around that region (Facebook Marketplace asking prices, Craigslist, KBB/Edmunds private-party values, regional market reports). Focus on vehicles that are famously easy/cheap to fix and resell fast — the classic flip candidates where sellers underprice because of a scary-sounding but cheap problem.
+${deep
+? 'You may use AT MOST 3 web searches total — make them count (e.g. one on regional used-car pricing, one on private-party values for your top candidates). Do not search more than 3 times.'
+: 'Do NOT use web search. Use your knowledge of typical private-party pricing for that region.'}
+Focus on vehicles that are famously easy/cheap to fix and resell fast — the classic flip candidates where sellers underprice because of a scary-sounding but cheap problem.
 
 Return ONLY a JSON object, no other text, no markdown fences, in exactly this shape:
 {
@@ -939,10 +973,10 @@ Return ONLY a JSON object, no other text, no markdown fences, in exactly this sh
    }
  ]
 }
-Rules: 5 to 7 targets, sorted best first. All prices realistic for that region and under the $${budget} buy budget. "risk" is 0-100 (0=safe money, 100=money pit). "difficulty" is Easy, Moderate, or Hard and must respect their skill level (${skill}) — do not recommend Hard flips to a Beginner. Keep every string tight.`;
+Rules: exactly 5 targets, sorted best first. All prices realistic for that region and under the $${budget} buy budget. "risk" is 0-100 (0=safe money, 100=money pit). "difficulty" is Easy, Moderate, or Hard and must respect their skill level (${skill}) — do not recommend Hard flips to a Beginner. Keep every string tight.`;
 
   try{
-    const text = await callClaude(prompt, true, 6000);
+    const text = await callClaude(prompt, deep? 3 : 0, 5000);
     const data = extractJSON(text);
     renderScan(data);
     bumpStat('odai_scans');
@@ -1022,7 +1056,7 @@ ${miles? 'Mileage: '+miles : ''}
 ${loc? 'Buyer location: '+loc : ''}
 Seller's description: """${desc}"""
 
-${useSearch? 'Use web search to check current private-party resale values for this vehicle in that region and typical repair costs for the issues described.' : 'Use your knowledge of typical values and repair costs.'}
+${useSearch? 'You may use AT MOST 2 web searches to check current private-party resale values for this vehicle in that region and typical repair costs for the issues described. Do not search more than twice.' : 'Do NOT use web search. Use your knowledge of typical values and repair costs.'}
 
 Return ONLY a JSON object, no other text, no markdown fences:
 {
@@ -1042,7 +1076,7 @@ Return ONLY a JSON object, no other text, no markdown fences:
 Rules: est_profit assumes buying near opening_offer, mid repair cost, mid ARV. risk 0=safe money, 100=money pit. Be honest — PASS is a valid answer.`;
 
   try{
-    const text = await callClaude(prompt, useSearch, 4500);
+    const text = await callClaude(prompt, useSearch? 2 : 0, 4000);
     const d = extractJSON(text);
     renderAnalysis(d);
   }catch(e){
